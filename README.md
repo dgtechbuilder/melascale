@@ -16,6 +16,9 @@ npm run dev
 
 Then open the URL Vite prints (usually http://localhost:5173).
 
+Live site: https://dgtechbuilder.github.io/melascale/ (deployed by
+`.github/workflows/deploy-pages.yml` on every push to `main`).
+
 To build a static site into `dist/` (works from any path, e.g. GitHub Pages):
 
 ```bash
