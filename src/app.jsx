@@ -34,7 +34,12 @@ export function App() {
   const [compare, setCompare] = useS(true);
   const [filters, setFilters] = useS({ platform: "all", game: "all", placements: [], regions: [], cohorts: [] });
   const [reportOpen, setReportOpen] = useS(null);
-  const [darkMode, setDarkMode] = useS(false);
+  const [darkMode, setDarkMode] = useS(() => {
+    // Start in the viewer's theme: an explicit data-theme on <html>, else the OS setting.
+    const set = document.documentElement.getAttribute("data-theme");
+    if (set === "dark" || set === "light") return set === "dark";
+    try { return window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) { return false; }
+  });
   const [settingsOpen, setSettingsOpen] = useS(false);
   const [profileOpen, setProfileOpen] = useS(false);
   const [navOpen, setNavOpen] = useS(false);
