@@ -1,0 +1,126 @@
+/* ============================================================
+   Mela Scale — Design System foundations
+   Colors + Type tokens, extracted from the Mela Scale dashboard.
+   Color model is oklch throughout (perceptually-even lightness).
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* ---- Surfaces & ink (warm-grey, hue 80) ---- */
+  --bg:        oklch(0.975 0.006 80);   /* app background */
+  --surface:   oklch(0.995 0.003 80);   /* cards, header */
+  --surface-2: oklch(0.965 0.006 80);   /* insets, hover fills */
+  --ink:       oklch(0.22 0.012 80);    /* primary text */
+  --ink-2:     oklch(0.42 0.012 80);    /* secondary text */
+  --ink-3:     oklch(0.62 0.01 80);     /* tertiary / labels */
+  --line:      oklch(0.91 0.006 80);    /* borders */
+  --line-2:    oklch(0.94 0.005 80);    /* hairline / inner borders */
+
+  /* ---- Brand & semantic ---- */
+  --primary:      oklch(0.42 0.16 285); /* indigo — actions, data line 1 */
+  --primary-soft: oklch(0.92 0.04 285); /* indigo tint — selection, soft chips */
+  --accent:       oklch(0.68 0.16 45);  /* warm orange — data line 2, highlight */
+  --accent-soft:  oklch(0.95 0.04 60);
+  --good:         oklch(0.62 0.13 155); /* green — positive delta, live */
+  --good-soft:    oklch(0.94 0.04 155);
+  --warn:         oklch(0.72 0.15 75);  /* amber */
+  --bad:          oklch(0.6 0.18 25);   /* red — negative delta */
+
+  /* ---- Elevation ---- */
+  --shadow-sm: 0 1px 2px oklch(0.2 0.01 80 / 0.04), 0 0 0 1px oklch(0.2 0.01 80 / 0.04);
+  --shadow-md: 0 4px 14px oklch(0.2 0.01 80 / 0.06), 0 1px 0 oklch(0.2 0.01 80 / 0.04);
+
+  /* ---- Radii ---- */
+  --radius:    14px;  /* cards */
+  --radius-btn: 10px; /* buttons, inputs */
+  --radius-pill: 999px;
+
+  /* ---- Misc ---- */
+  --ai-grad-top: oklch(0.99 0.005 285); /* AI card gradient top (theme-aware) */
+
+  /* ---- Type families ---- */
+  --font-sans:  "Instrument Sans", system-ui, sans-serif;
+  --font-serif: "Instrument Serif", serif;        /* used italic, for display accents */
+  --font-mono:  "JetBrains Mono", ui-monospace, monospace; /* numbers, labels, codes */
+}
+
+/* ---- Dark theme: set [data-theme="dark"] on <html> ---- */
+[data-theme="dark"] {
+  --bg:        oklch(0.13 0.008 280);
+  --surface:   oklch(0.17 0.008 280);
+  --surface-2: oklch(0.21 0.008 280);
+  --ink:       oklch(0.94 0.006 80);
+  --ink-2:     oklch(0.72 0.008 80);
+  --ink-3:     oklch(0.50 0.008 80);
+  --line:      oklch(0.28 0.006 280);
+  --line-2:    oklch(0.24 0.006 280);
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.25), 0 0 0 1px oklch(1 0 0 / 0.04);
+  --shadow-md: 0 4px 14px oklch(0 0 0 / 0.35), 0 1px 0 oklch(1 0 0 / 0.04);
+  --ai-grad-top: oklch(0.20 0.01 285);
+}
+
+/* ============================================================
+   Base / semantic element styles
+   ============================================================ */
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Display / headings */
+h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+h3 { font-size: 14.5px; font-weight: 600; margin: 0; }
+
+/* The signature serif-italic display accent (e.g. brand name in titles) */
+.display-accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--primary);
+}
+
+/* Big metric number */
+.metric {
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Body copy */
+p { margin: 0 0 0.75em; color: var(--ink); }
+.text-2 { color: var(--ink-2); }
+.text-3 { color: var(--ink-3); }
+
+/* Monospace utilities — numbers, codes, eyebrow labels */
+.mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
+.tnum { font-variant-numeric: tabular-nums; }
+.serif { font-family: var(--font-serif); }
+
+/* Eyebrow / uppercase label */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Code */
+code, pre {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 5px;
+}
