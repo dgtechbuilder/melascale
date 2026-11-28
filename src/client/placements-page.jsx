@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { GAMES, fmtMoney, fmtNum } from "./data.jsx";
+import { CAMPAIGN, GAMES, PLACEMENT_ROWS, fmtMoney, fmtNum } from "./data.jsx";
+import { useClient } from "./context.js";
+import { campaignStatus } from "../shared/schema.js";
+import { fmtDate } from "../shared/format.js";
 import { PlacementTable } from "./app.jsx";
 /* Placements Page — inventory & management view */
 
@@ -36,7 +39,8 @@ export const OWNERS = [
 ];
 
 /* Mock placements data */
-export const PLACEMENT_INVENTORY = [
+/* Design sample inventory (kept for reference; the page now shows the campaign's placements). */
+export const SAMPLE_PLACEMENT_INVENTORY = [
   { id: 1,  name: "Spring Planting Billboard",    type: "placement", subtype: "Billboard",       partner: "Northwind Goods",    status: "live",      value: 42000,  owner: OWNERS[0], endDate: "Jun 1, 2026",  level: "Sunfield Valley",  impressions: 3120000, ctr: 1.4 },
   { id: 2,  name: "Branded Crop Seeds",           type: "placement", subtype: "Cosmetic",        partner: "Northwind Goods",    status: "live",      value: 68000,  owner: OWNERS[0], endDate: "Jun 1, 2026",  level: "Sunfield Valley",  impressions: 2410000, ctr: 4.8 },
   { id: 3,  name: "Harvest Tutorial Module",      type: "training",  subtype: "Tutorial Segment", partner: "Northwind Goods",   status: "live",      value: 35000,  owner: OWNERS[1], endDate: "May 28, 2026", level: "Harvest Hollow",   impressions: 980000,  ctr: 6.1 },
@@ -56,7 +60,24 @@ export const PLACEMENT_INVENTORY = [
 export function getStatusInfo(id) { return PLACEMENT_STATUSES.find(s => s.id === id) || PLACEMENT_STATUSES[0]; }
 export function getTypeInfo(id) { return PLACEMENT_TYPES.find(t => t.id === id) || PLACEMENT_TYPES[0]; }
 
+/* The signed-in client's campaign placements, in the inventory shape the design uses. */
+function campaignInventory(ctx) {
+  const st = ctx ? campaignStatus(ctx.current, ctx.today) : "live";
+  const status = st === "scheduled" ? "agreed" : st === "draft" ? "draft" : st;
+  const total = PLACEMENT_ROWS.reduce((a, r) => a + r.impressions, 0) || 1;
+  return PLACEMENT_ROWS.map((r, i) => ({
+    id: r.id, name: r.detail,
+    type: r.kind === "tutorial" ? "training" : r.kind === "event" ? "marketing" : "placement",
+    subtype: r.placement, partner: CAMPAIGN.brand, status,
+    value: Math.round((CAMPAIGN.budget * r.impressions) / total),
+    owner: OWNERS[i % OWNERS.length], endDate: fmtDate(CAMPAIGN.endsAt), level: r.game,
+    impressions: r.impressions || null, ctr: r.ctr,
+  }));
+}
+
 export function PlacementsPage() {
+  const ctx = useClient();
+  const PLACEMENT_INVENTORY = useMemo(() => campaignInventory(ctx), [ctx, PLACEMENT_ROWS]);
   const [view, setView] = useState("table");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -73,7 +94,7 @@ export function PlacementsPage() {
       if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.partner.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [typeFilter, statusFilter, partnerFilter, search]);
+  }, [PLACEMENT_INVENTORY, typeFilter, statusFilter, partnerFilter, search]);
 
   const stats = useMemo(() => {
     const all = PLACEMENT_INVENTORY;
@@ -82,7 +103,7 @@ export function PlacementsPage() {
     const expiring = all.filter(p => {
       if (p.status !== "live") return false;
       const d = new Date(p.endDate);
-      const now = new Date("2026-05-22");
+      const now = new Date();
       return (d - now) / 86400000 < 30;
     });
     return [
@@ -91,7 +112,7 @@ export function PlacementsPage() {
       { label: "Expiring <30d", value: expiring.length, color: "var(--accent)" },
       { label: "Total", value: all.length, color: "var(--ink-2)" },
     ];
-  }, []);
+  }, [PLACEMENT_INVENTORY]);
 
   return (
     <div style={{ padding: "20px 28px 28px", display: "flex", flexDirection: "column", gap: 0 }}>
@@ -99,15 +120,8 @@ export function PlacementsPage() {
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.015em" }}>Placements</div>
-          <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 2 }}>Manage in-game placements, training, and marketing opportunities</div>
+          <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 2 }}>Your in-game placements in {CAMPAIGN.game} for {CAMPAIGN.name}</div>
         </div>
-        <button onClick={() => setAddOpen(true)} style={{
-          padding: "9px 16px", borderRadius: 10, border: "none",
-          background: "var(--ink)", color: "var(--surface)", fontSize: 13, fontWeight: 500,
-          cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-        }}>
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Add placement
-        </button>
         <div style={{ display: "flex", background: "var(--surface-2)", borderRadius: 10, padding: 3, border: "1px solid var(--line)" }}>
           {[{ id: "table", icon: "☰" }, { id: "kanban", icon: "▣" }].map(v => (
             <button key={v.id} onClick={() => setView(v.id)} style={{
@@ -139,7 +153,6 @@ export function PlacementsPage() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 18 }}>
         <PlacementFilterPill label="Type" value={typeFilter} options={[{ id: "all", label: "All types" }, ...PLACEMENT_TYPES.map(t => ({ id: t.id, label: t.label }))]} onChange={setTypeFilter} />
         <PlacementFilterPill label="Status" value={statusFilter} options={[{ id: "all", label: "All statuses" }, ...PLACEMENT_STATUSES.map(s => ({ id: s.id, label: s.label }))]} onChange={setStatusFilter} />
-        <PlacementFilterPill label="Partner" value={partnerFilter} options={[{ id: "all", label: "All partners" }, ...PARTNERS.map(p => ({ id: p, label: p }))]} onChange={setPartnerFilter} />
         <div style={{
           display: "flex", alignItems: "center", gap: 6,
           padding: "6px 12px", border: "1px solid var(--line)", borderRadius: 999,

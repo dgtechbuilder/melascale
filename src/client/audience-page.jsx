@@ -1,6 +1,7 @@
+import { SampleNote } from "./sample-note.jsx";
 import React, { useState as useS, useMemo as useM } from "react";
 import { fmtNum } from "./data.jsx";
-import { Donut } from "./charts.jsx";
+import { Donut } from "../shared/charts.jsx";
 /* Audience Page */
 
 
@@ -51,6 +52,7 @@ export const SESSION_BY_HOUR = [
 export function AudiencePage() {
   return (
     <div style={{ padding: "20px 28px 28px", display: "flex", flexDirection: "column", gap: 0 }}>
+      <SampleNote what="Audience and cohort data" style={{ marginBottom: 16 }} />
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.015em" }}>Audience</div>

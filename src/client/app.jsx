@@ -1,7 +1,7 @@
 import React, { useState as useS, useMemo as useM, useEffect as useE, useRef as useR } from "react";
 import { TweakColor, TweakRadio, TweakSection, TweakToggle, TweaksPanel, useTweaks } from "./tweaks-panel.jsx";
-import { ACTIVITY, AMPLIFICATION, BUSINESS_TILES, CAMPAIGN, COHORT_DATA, ENGAGEMENT_DAYS, FUNNEL, INSIGHTS, KPIS, PLACEMENT_ROWS, REGION_DATA, REPORTS, fmtDelta, fmtMoney, fmtNum } from "./data.jsx";
-import { BarList, Donut, EngagementChart } from "./charts.jsx";
+import { ACTIVITY, AMPLIFICATION, BUSINESS_TILES, CAMPAIGN, COHORT_DATA, ENGAGEMENT_DAYS, FUNNEL, INSIGHTS, KPIS, PLACEMENT_ROWS, REGION_DATA, REPORTS, fmtDelta, fmtMoney, fmtNum, TREND } from "./data.jsx";
+import { BarList, Donut, EngagementChart } from "../shared/charts.jsx";
 import { FilterBar, Header, KpiStrip, ProfileDropdown, Sidebar, avatarStyle } from "./panels.jsx";
 import { PlacementsPage } from "./placements-page.jsx";
 import { AIInsightsPage } from "./insights-page.jsx";
@@ -9,7 +9,8 @@ import { AnalyticsPage } from "./analytics-page.jsx";
 import { BusinessImpactPage } from "./impact-page.jsx";
 import { AudiencePage } from "./audience-page.jsx";
 import { AmplificationPage } from "./amplification-page.jsx";
-import { TelemetryPage } from "./telemetry-page.jsx";
+import { useClient } from "./context.js";
+import { SampleNote } from "./sample-note.jsx";
 /* Main app — Mela Scale Traction Analytics */
 
 
@@ -27,7 +28,8 @@ export const ACCENT_MAP = {
   "#3A8758": { primary: "oklch(0.45 0.12 155)", primarySoft: "oklch(0.92 0.04 155)" },
 };
 
-export function App() {
+export function App({ dataVersion }) {
+  const client = useClient();
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [active, setActive] = useS("overview");
   const [rangeIdx, setRangeIdx] = useS(2);
@@ -76,8 +78,6 @@ export function App() {
           <AudiencePage />
         ) : active === "amp" ? (
           <AmplificationPage />
-        ) : active === "integrations" ? (
-          <TelemetryPage />
         ) : (
           <React.Fragment>
             <FilterBar filters={filters} setFilters={setFilters} />
@@ -91,7 +91,7 @@ export function App() {
         <Footer />
       </main>
       <div style={{ position: "fixed", top: 7, right: 28, zIndex: 10 }}>
-        <button onClick={(e) => { e.stopPropagation(); setProfileOpen(!profileOpen); }} style={{ ...avatarStyle, cursor: "pointer" }}>KO</button>
+        <button onClick={(e) => { e.stopPropagation(); setProfileOpen(!profileOpen); }} style={{ ...avatarStyle, cursor: "pointer" }} aria-label="Account menu">{client ? client.userInitials : "KO"}</button>
         {profileOpen && <ProfileDropdown onClose={() => setProfileOpen(false)} />}
       </div>
       <TweaksUI t={t} setTweak={setTweak} />
@@ -124,9 +124,9 @@ export function ChartCard({ tab, setTab, compare }) {
         <div>
           <div style={{ fontSize: 12, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase" }} className="mono">Trend · Daily</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.02em" }} className="tnum">487,210</div>
-            <div style={{ fontSize: 13, color: "var(--good)", background: "var(--good-soft)", padding: "2px 7px", borderRadius: 999, fontWeight: 600 }} className="mono tnum">↑ 12.4%</div>
-            <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>total engagements · last 30 days</div>
+            <div style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.02em" }} className="tnum">{Math.round(TREND.total).toLocaleString("en-US")}</div>
+            {TREND.delta != null && <div style={{ fontSize: 13, color: TREND.delta >= 0 ? "var(--good)" : "var(--bad)", background: TREND.delta >= 0 ? "var(--good-soft)" : "oklch(0.95 0.04 25)", padding: "2px 7px", borderRadius: 999, fontWeight: 600 }} className="mono tnum">{TREND.delta >= 0 ? "↑" : "↓"} {Math.abs(TREND.delta).toFixed(1)}%</div>}
+            <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>player interactions with your placements · last 30 days</div>
           </div>
         </div>
         <div style={{ flex: 1 }} />
@@ -251,13 +251,14 @@ export function BusinessImpactSection() {
 }
 
 export function FunnelCard() {
-  const maxV = FUNNEL[0].value;
+  const maxV = FUNNEL[0].value || 1;
+  const last = FUNNEL[FUNNEL.length - 1];
   return (
     <div className="card" style={{ padding: 18 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 14.5, fontWeight: 600 }}>Exposure → conversion funnel</div>
-          <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Attributed to Northwind Goods Spring Planting · 30d</div>
+          <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Attributed to {CAMPAIGN.campaign} · 30d</div>
         </div>
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", gap: 14, fontSize: 11.5, color: "var(--ink-2)" }}>
@@ -272,7 +273,7 @@ export function FunnelCard() {
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {FUNNEL.map((step, i) => {
           const w = (step.value / maxV) * 100;
-          const mobShare = i === 0 ? 67 : i === 1 ? 66 : i === 2 ? 65 : i === 3 ? 58 : 51;
+          const mobShare = step.mobileShare != null ? step.mobileShare : (i === 0 ? 67 : i === 1 ? 66 : i === 2 ? 65 : i === 3 ? 58 : 51);
           return (
             <div key={step.stage} style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{ width: 170, fontSize: 13, color: "var(--ink-2)" }}>{step.stage}</div>
@@ -296,7 +297,7 @@ export function FunnelCard() {
       </div>
       <div style={{ marginTop: 14, padding: "10px 12px", background: "var(--surface-2)", border: "1px solid var(--line-2)", borderRadius: 10, display: "flex", alignItems: "center", gap: 12, fontSize: 12.5 }}>
         <span style={{ width: 6, height: 6, borderRadius: 3, background: "var(--primary)" }} />
-        <span><b>0.48%</b> impression-to-conversion is <b style={{ color: "var(--good)" }}>2.4× the in-game median.</b> WebGL funnel converts at 0.73%, Mobile at 0.36%.</span>
+        <span><b className="mono tnum">{last.pct.toFixed(2)}%</b> of impressions became attributed conversions ({fmtNum(last.value)}). <b className="mono tnum">{(FUNNEL[1].pct).toFixed(1)}%</b> of impressions were viewable.</span>
       </div>
     </div>
   );
@@ -326,7 +327,8 @@ export function BusinessTiles() {
 /* ───────── Amplification ───────── */
 export function AmplificationSection() {
   return (
-    <div className="grid-2-flip">
+    <div className="grid-2-flip" style={{ position: "relative" }}>
+      <SampleNote what="Social listening" />
       <SocialCard />
       <InfluencerTable />
     </div>
@@ -441,7 +443,7 @@ export function PlacementTable() {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return s;
-  }, [sortKey, sortDir]);
+  }, [sortKey, sortDir, PLACEMENT_ROWS]);
 
   function header(key, label, align = "left") {
     const isActive = sortKey === key;
@@ -589,7 +591,7 @@ export function RegionView() {
           ))}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }} className="mono">Engagement lift by region</div>
+      <div style={{ fontSize: 11, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }} className="mono">Engagement rate by region</div>
       <BarList items={REGION_DATA} valueKey="lift" suffix="%" color="var(--primary)" />
     </div>
   );
@@ -598,6 +600,7 @@ export function RegionView() {
 export function CohortView() {
   return (
     <div>
+      <SampleNote what="Player cohort data" style={{ marginBottom: 12 }} />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 16 }}>
         {COHORT_DATA.map(c => (
           <div key={c.id} style={{ padding: "10px 12px", background: "var(--surface-2)", borderRadius: 10, border: "1px solid var(--line-2)" }}>
@@ -638,6 +641,7 @@ export function ReportsPage({ onOpenReport }) {
         <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.015em" }}>Reports</div>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 2 }}>Automated weekly intelligence for {CAMPAIGN.brand} × {CAMPAIGN.game}</div>
       </div>
+      <SampleNote what="Automated weekly reporting" style={{ marginBottom: 16 }} />
       <ReportsList onOpen={onOpenReport} />
     </div>
   );
@@ -693,7 +697,7 @@ export function ActivityStream() {
         <span className="live-dot" />
         <div style={{ fontSize: 14.5, fontWeight: 600 }}>Live activity</div>
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 11.5, color: "var(--ink-3)" }} className="mono">5/5 feeds</span>
+        <span style={{ fontSize: 11.5, color: "var(--ink-3)" }} className="mono">{CAMPAIGN.game}</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
         {ACTIVITY.map((a, i) => (
@@ -886,7 +890,7 @@ export function SettingsNotifications() {
 
 export function SettingsIntegrations() {
   const integrations = [
-    { name: "Lima Farming Game API", status: "connected", icon: "↯", detail: "5 data feeds · last sync 12s ago" },
+    { name: `${CAMPAIGN.game} analytics feed`, status: "connected", icon: "↯", detail: "Managed by Kunta Content" },
     { name: "Slack", status: "connected", icon: "◆", detail: "#mela-alerts · kwame@northwindgoods.com" },
     { name: "Google Analytics", status: "disconnected", icon: "△", detail: "Attribution enrichment" },
     { name: "Salesforce CRM", status: "disconnected", icon: "◇", detail: "Conversion attribution sync" },
@@ -1143,7 +1147,7 @@ export function ReportDrawer({ report, onClose }) {
         <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
           <Section title="TL;DR">
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--ink-2)" }}>
-              <b>Northwind Goods × Lima Farming Game</b> delivered <b className="mono tnum">{fmtDelta(report.delta)}</b> WoW with a campaign ROAS of <b className="mono tnum">3.42×</b>. WebGL continues to outperform Mobile on per-user value (4.2× vs 3.1× ROAS, +31% session length). Mobile billboards in Coastal Acres remain a watch item — viewability slipped below the IAB floor after the May 9 weather event.
+              <b>{CAMPAIGN.brand} × {CAMPAIGN.game}</b> delivered <b className="mono tnum">{fmtDelta(report.delta)}</b> WoW with a campaign ROAS of <b className="mono tnum">3.42×</b>. WebGL continues to outperform Mobile on per-user value (4.2× vs 3.1× ROAS, +31% session length). Mobile billboards in Coastal Acres remain a watch item — viewability slipped below the IAB floor after the May 9 weather event.
             </p>
           </Section>
           <Section title="Headline metrics">

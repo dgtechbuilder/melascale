@@ -1,7 +1,10 @@
 import React from "react";
-/* Mock dataset + helpers for Mela Scale — Northwind Goods × Lima Farming campaign */
+/* Client dashboard data. The `let` exports start as the design's sample values and are
+   replaced with the signed-in client's campaign figures by applyCampaignView(). Sections
+   without a live source yet (social, holdout lift, cohorts, AI insights) keep sample data
+   and are labelled "Sample data" in the UI. */
 
-export const CAMPAIGN = {
+export let CAMPAIGN = {
   brand: "Northwind Goods",
   studio: "Kunta Content",
   game: "Lima Farming Game",
@@ -20,7 +23,7 @@ export const PLATFORMS = [
 ];
 
 /* In-game placement locations — sub-areas of Lima Farming */
-export const GAMES = [
+export let GAMES = [
   { id: "all", label: "All maps", short: "ALL" },
   { id: "sunfield", label: "Sunfield Valley", short: "SUN", color: "oklch(0.7 0.14 80)" },
   { id: "harvest", label: "Harvest Hollow", short: "HRV", color: "oklch(0.58 0.13 35)" },
@@ -81,7 +84,7 @@ export function buildSeries(seed, len, base, vol) {
 }
 
 /* ─── Top-of-dashboard KPIs ─── */
-export const KPIS = [
+export let KPIS = [
   {
     id: "reach",
     label: "Unique reach",
@@ -112,7 +115,7 @@ export const KPIS = [
 ];
 
 /* ─── Business impact panel ─── */
-export const FUNNEL = [
+export let FUNNEL = [
   { stage: "Impressions", value: 18_240_000, pct: 100 },
   { stage: "Viewable impressions", value: 15_960_000, pct: 87.5 },
   { stage: "Engaged sessions", value: 4_820_000, pct: 26.4 },
@@ -163,13 +166,13 @@ export const AMPLIFICATION = {
 };
 
 /* ─── Platform performance ─── */
-export const PLATFORM_PERF = [
+export let PLATFORM_PERF = [
   { id: "mobile", label: "Mobile", reach: 3.21, sessionLen: 22.1, ctr: 4.4, roas: 3.1, share: 67 },
   { id: "webgl",  label: "WebGL",  reach: 1.61, sessionLen: 28.9, ctr: 5.8, roas: 4.2, share: 33 },
 ];
 
 /* ─── Placement rows ─── */
-export const PLACEMENT_ROWS = [
+export let PLACEMENT_ROWS = [
   { placement: "Cosmetic",      game: "Sunfield Valley",   impressions: 2_410_000, ctr: 4.8, recall: 52, cpe: 0.14, lift: 31, status: "up",   detail: "Northwind branded crop seeds", platform: "Mobile" },
   { placement: "Environmental", game: "Harvest Hollow",    impressions: 1_870_000, ctr: 3.2, recall: 44, cpe: 0.17, lift: 24, status: "up",   detail: "Northwind grain silo signage", platform: "WebGL"  },
   { placement: "Cutscene",      game: "Cedar Heights",     impressions:   980_000, ctr: 6.1, recall: 49, cpe: 0.21, lift: 22, status: "flat", detail: "Spring planting short",   platform: "Mobile" },
@@ -179,7 +182,7 @@ export const PLACEMENT_ROWS = [
   { placement: "In-game Billboard",     game: "Sunfield Valley",   impressions: 2_800_000, ctr: 1.8, recall: 30, cpe: 0.10, lift: 11, status: "down", detail: "Town square hoarding",    platform: "WebGL" },
 ];
 
-export const REGION_DATA = [
+export let REGION_DATA = [
   { id: "na",    label: "North America", impressions: 5.4, lift: 27, share: 38, roas: 3.8 },
   { id: "emea",  label: "EMEA",          impressions: 4.1, lift: 22, share: 29, roas: 3.1 },
   { id: "apac",  label: "APAC",          impressions: 3.6, lift: 31, share: 26, roas: 4.1 },
@@ -194,7 +197,7 @@ export const COHORT_DATA = [
 ];
 
 /* Daily series — now with both platforms */
-export const ENGAGEMENT_DAYS = (() => {
+export let ENGAGEMENT_DAYS = (() => {
   const days = 30;
   const m = buildSeries(101, days, 78, 14).map(v => Math.round(v * 10) / 10);
   const w = buildSeries(202, days, 42, 8).map(v => Math.round(v * 10) / 10);
@@ -208,7 +211,7 @@ export const ENGAGEMENT_DAYS = (() => {
   }));
 })();
 
-export const ACTIVITY = [
+export let ACTIVITY = [
   { t: "12s ago", txt: "Northwind branded seeds in Sunfield Valley — 2.4M unique impressions", tag: "milestone" },
   { t: "44s ago", txt: "Cedar Heights season-change cutscene · CTR up to 6.3% (Mobile)",  tag: "up" },
   { t: "1m ago",  txt: "Coastal Acres billboard viewability dropped to 61% on Mobile",   tag: "warn" },
@@ -258,22 +261,23 @@ export const NAV = [
 ];
 
 export const NAV_FOOTER = [
-  { id: "integrations", label: "Game telemetry", icon: "↯" },
   { id: "settings",     label: "Settings",       icon: "⚙" },
 ];
 
-export function fmtNum(n) {
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
-  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
-  return String(n);
-}
-export function fmtMoney(n) {
-  if (n >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M";
-  if (n >= 1e3) return "$" + (n / 1e3).toFixed(1) + "K";
-  return "$" + n.toFixed(n < 1 ? 3 : 2);
-}
-export function fmtDelta(d) {
-  const s = d > 0 ? "+" : "";
-  return s + d.toFixed(1) + "%";
+export { fmtNum, fmtMoney, fmtDelta } from "../shared/format.js";
+
+export let TREND = { total: 487210, delta: 12.4 };
+
+/* Swap in a campaign's computed view (see shared/metrics.js buildCampaignView). */
+export function applyCampaignView(v) {
+  CAMPAIGN = v.CAMPAIGN;
+  KPIS = v.KPIS;
+  ENGAGEMENT_DAYS = v.ENGAGEMENT_DAYS;
+  TREND = v.TREND;
+  PLACEMENT_ROWS = v.PLACEMENT_ROWS;
+  FUNNEL = v.FUNNEL;
+  PLATFORM_PERF = v.PLATFORM_PERF;
+  REGION_DATA = v.REGION_DATA;
+  ACTIVITY = v.ACTIVITY;
+  GAMES = v.MAPS;
 }

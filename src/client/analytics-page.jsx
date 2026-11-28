@@ -1,6 +1,7 @@
+import { SampleNote } from "./sample-note.jsx";
 import React, { useState as useS, useMemo as useM } from "react";
 import { AMPLIFICATION, BUSINESS_TILES, COHORT_DATA, ENGAGEMENT_DAYS, FUNNEL, KPIS, PLATFORM_PERF, REGION_DATA, fmtNum } from "./data.jsx";
-import { BarList, Donut, EngagementChart } from "./charts.jsx";
+import { BarList, Donut, EngagementChart } from "../shared/charts.jsx";
 /* Analytics Page — consolidated analytics dashboard */
 
 
@@ -11,6 +12,7 @@ export function AnalyticsPage() {
 
   return (
     <div style={{ padding: "20px 28px 28px", display: "flex", flexDirection: "column", gap: 0 }}>
+      <SampleNote what="Holdout lift, cohort and social data (the funnel, platform, region and trend panels are live)" style={{ marginBottom: 16 }} />
       {/* Top bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
@@ -336,7 +338,7 @@ export function AnalyticsRegionView() {
           ))}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }} className="mono">Engagement lift by region</div>
+      <div style={{ fontSize: 11, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }} className="mono">Engagement rate by region</div>
       <BarList items={REGION_DATA} valueKey="lift" suffix="%" color="var(--primary)" />
     </div>
   );

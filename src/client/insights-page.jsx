@@ -1,3 +1,4 @@
+import { SampleNote } from "./sample-note.jsx";
 import React, { useState as useS, useMemo as useM } from "react";
 import { INSIGHTS } from "./data.jsx";
 import { InsightCard } from "./app.jsx";
@@ -11,6 +12,7 @@ export function AIInsightsPage() {
 
   return (
     <div style={{ padding: "20px 28px 28px", display: "flex", flexDirection: "column", gap: 0 }}>
+      <SampleNote what="AI insight generation" style={{ marginBottom: 16 }} />
       {/* Top bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
