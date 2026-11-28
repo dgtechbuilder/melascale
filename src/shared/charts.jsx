@@ -14,11 +14,11 @@ export function buildPath(values, w, h, padY = 6) {
   }).join(" ");
 }
 
-export function buildSmoothPath(values, w, h, padY = 8) {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+export function buildSmoothPath(values, w, h, padY = 8, scaleMin, scaleMax) {
+  const min = scaleMin != null ? scaleMin : Math.min(...values);
+  const max = scaleMax != null ? scaleMax : Math.max(...values);
   const range = max - min || 1;
-  const stepX = w / (values.length - 1);
+  const stepX = w / Math.max(1, values.length - 1);
   const pts = values.map((v, i) => [
     i * stepX,
     padY + (h - padY * 2) * (1 - (v - min) / range),
@@ -55,14 +55,18 @@ export function Sparkline({ values, color = "var(--primary)", height = 36, width
 }
 
 /* Big engagement chart with two series, hover crosshair, axis labels */
-export function EngagementChart({ data, height = 280, currentColor = "var(--primary)", previousColor = "oklch(0.78 0.04 285)", showPrevious = true }) {
+const compact = (v) => {
+  const a = Math.abs(v);
+  if (a >= 1e6) return (v / 1e6).toFixed(1) + "M";
+  if (a >= 1e3) return (v / 1e3).toFixed(1) + "K";
+  return a >= 10 || v === 0 ? Math.round(v).toString() : v.toFixed(1);
+};
+
+export function EngagementChart({ data, height = 280, currentColor = "var(--primary)", previousColor = "oklch(0.78 0.04 285)", showPrevious = true, unit = "eng.", format = compact, currentLabel = "This period", previousLabel = "Previous" }) {
+  const gradId = "curFill" + React.useId().replace(/:/g, "");
   const ref = useRef(null);
   const [w, setW] = useState(800);
   const [hover, setHover] = useState(null);
-  const padL = 40, padR = 16, padT = 16, padB = 28;
-  const innerW = w - padL - padR;
-  const innerH = height - padT - padB;
-
   useEffect(() => {
     if (!ref.current) return;
     const obs = new ResizeObserver(([e]) => setW(e.contentRect.width));
@@ -73,14 +77,19 @@ export function EngagementChart({ data, height = 280, currentColor = "var(--prim
   const cur = data.map(d => d.current);
   const prv = data.map(d => d.previous);
   const all = [...cur, ...prv];
-  const max = Math.max(...all);
-  const min = Math.min(...all);
+  const max = Math.max(...all, 0);
+  const min = Math.min(...all, 0);
   const range = max - min || 1;
-  const stepX = innerW / (data.length - 1);
+  const longest = Math.max(...[0, 1, 2, 3, 4].map(i => format(min + (range * i) / 4).length));
+  const padL = 14 + longest * 6.6, padR = 16, padT = 16, padB = 28;
+  const innerW = w - padL - padR;
+  const innerH = height - padT - padB;
+  const stepX = innerW / Math.max(1, data.length - 1);
   const y = (v) => padT + innerH * (1 - (v - min) / range);
 
-  const curPath = useMemo(() => buildSmoothPath(cur, innerW, innerH, 0), [cur, innerW, innerH]);
-  const prvPath = useMemo(() => buildSmoothPath(prv, innerW, innerH, 0), [prv, innerW, innerH]);
+  // Both series share the axis scale so the lines and tick labels agree.
+  const curPath = useMemo(() => buildSmoothPath(cur, innerW, innerH, 0, min, max), [cur, innerW, innerH, min, max]);
+  const prvPath = useMemo(() => buildSmoothPath(prv, innerW, innerH, 0, min, max), [prv, innerW, innerH, min, max]);
 
   // y-axis ticks
   const ticks = 4;
@@ -100,7 +109,7 @@ export function EngagementChart({ data, height = 280, currentColor = "var(--prim
         {tickVals.map((tv, i) => (
           <g key={i}>
             <line x1={padL} x2={w - padR} y1={padT + (innerH * i) / ticks} y2={padT + (innerH * i) / ticks} stroke="var(--line-2)" strokeDasharray={i === ticks ? "0" : "2 4"} />
-            <text x={padL - 8} y={padT + (innerH * i) / ticks + 4} fontSize="10" textAnchor="end" fill="var(--ink-3)" className="mono">{tickVals[tickVals.length - 1 - i].toFixed(0)}</text>
+            <text x={padL - 8} y={padT + (innerH * i) / ticks + 4} fontSize="10" textAnchor="end" fill="var(--ink-3)" className="mono">{format(tickVals[tickVals.length - 1 - i])}</text>
           </g>
         ))}
         {/* x labels — every 5 days */}
@@ -116,12 +125,12 @@ export function EngagementChart({ data, height = 280, currentColor = "var(--prim
         {/* current */}
         <g transform={`translate(${padL},${padT})`}>
           <defs>
-            <linearGradient id="curFill" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={currentColor} stopOpacity="0.18" />
               <stop offset="100%" stopColor={currentColor} stopOpacity="0" />
             </linearGradient>
           </defs>
-          <path d={curPath.d + ` L ${innerW},${innerH} L 0,${innerH} Z`} fill="url(#curFill)" />
+          <path d={curPath.d + ` L ${innerW},${innerH} L 0,${innerH} Z`} fill={`url(#${gradId})`} />
           <path d={curPath.d} fill="none" stroke={currentColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </g>
         {/* crosshair */}
@@ -139,17 +148,17 @@ export function EngagementChart({ data, height = 280, currentColor = "var(--prim
           background: "var(--surface)", boxShadow: "var(--shadow-md)", borderRadius: 10, padding: "8px 10px",
           fontSize: 12, pointerEvents: "none", border: "1px solid var(--line)", minWidth: 180,
         }}>
-          <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }} className="mono">Day {data[hover].label} · May {hover + 1}, 2026</div>
+          <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }} className="mono">{data[hover].dateLabel || `Day ${data[hover].label}`}</div>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: currentColor }} />This period</span>
-            <span className="mono tnum" style={{ fontWeight: 600 }}>{cur[hover].toFixed(1)}K eng.</span>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: currentColor }} />{currentLabel}</span>
+            <span className="mono tnum" style={{ fontWeight: 600 }}>{format(cur[hover])} {unit}</span>
           </div>
           {showPrevious && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginTop: 2 }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 8, height: 2, background: previousColor }} />Previous</span>
-              <span className="mono tnum" style={{ color: "var(--ink-2)" }}>{prv[hover].toFixed(1)}K</span>
+                <span style={{ width: 8, height: 2, background: previousColor }} />{previousLabel}</span>
+              <span className="mono tnum" style={{ color: "var(--ink-2)" }}>{format(prv[hover])}</span>
             </div>
           )}
         </div>

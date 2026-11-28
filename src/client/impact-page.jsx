@@ -1,3 +1,4 @@
+import { SampleNote } from "./sample-note.jsx";
 import React, { useState as useS, useMemo as useM } from "react";
 import { fmtMoney } from "./data.jsx";
 /* Business Impact Page */
@@ -37,6 +38,7 @@ export const LTV_COHORTS = [
 export function BusinessImpactPage() {
   return (
     <div style={{ padding: "20px 28px 28px", display: "flex", flexDirection: "column", gap: 0 }}>
+      <SampleNote what="Holdout and revenue attribution" style={{ marginBottom: 16 }} />
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.015em" }}>Business impact</div>

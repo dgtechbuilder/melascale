@@ -1,3 +1,4 @@
+import { SampleNote } from "./sample-note.jsx";
 import React, { useState as useS } from "react";
 import { AMPLIFICATION, fmtNum } from "./data.jsx";
 /* Amplification Page */
@@ -40,6 +41,7 @@ export function AmplificationPage() {
 
   return (
     <div style={{ padding: "20px 28px 28px", display: "flex", flexDirection: "column", gap: 0 }}>
+      <SampleNote what="Social listening" style={{ marginBottom: 16 }} />
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.015em" }}>Amplification</div>

@@ -3,14 +3,88 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mela Scale — Lima Farming traction</title>
-<meta name="description" content="Mela Scale campaign intelligence: in-game brand placement tracking for the Lima Farming game." />
+<title>Mela Scale</title>
+<meta name="description" content="Mela Scale by Kunta Content: in-game brand campaign analytics. Admin portal for the Kunta Content team and client portal for brands." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: oklch(0.975 0.006 80); --surface: oklch(0.995 0.003 80); --ink: oklch(0.22 0.012 80);
+    --ink-2: oklch(0.42 0.012 80); --ink-3: oklch(0.55 0.01 80); --line: oklch(0.91 0.006 80);
+    --primary: oklch(0.42 0.16 285); --accent: oklch(0.68 0.16 45);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: oklch(0.13 0.008 280); --surface: oklch(0.17 0.008 280); --ink: oklch(0.94 0.006 80);
+      --ink-2: oklch(0.72 0.008 80); --ink-3: oklch(0.6 0.008 80); --line: oklch(0.28 0.006 280);
+      --primary: oklch(0.7 0.13 285); color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+    font-family: "Instrument Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.5;
+    display: grid; place-items: center; padding: 40px max(16px, env(safe-area-inset-left, 0px)); }
+  main { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 28px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .mark { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), oklch(0.58 0.18 320)); position: relative; }
+  .mark::after { content: ""; position: absolute; left: 11px; right: 11px; top: 17px; height: 2px; border-radius: 2px; background: white; }
+  .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+  h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.1; letter-spacing: -0.025em; margin: 0; font-weight: 600; text-wrap: balance; }
+  h1 em { font-family: "Instrument Serif", serif; font-weight: 400; color: var(--primary); }
+  p { margin: 0; color: var(--ink-2); max-width: 60ch; }
+  .portals { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  a.portal { display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 14px; text-decoration: none; color: inherit;
+    background: var(--surface); border: 1px solid var(--line); transition: border-color .15s, transform .15s; }
+  a.portal:hover { border-color: var(--primary); transform: translateY(-1px); }
+  a.portal:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .portal b { font-size: 18px; letter-spacing: -0.01em; }
+  .portal span { color: var(--ink-2); font-size: 14px; }
+  .go { margin-top: 6px; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--primary); }
+  .catalog { display: flex; flex-direction: column; gap: 12px; }
+  .catalog-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .catalog-head h2 { margin: 0; font-size: 17px; letter-spacing: -0.01em; font-weight: 600; }
+  .live { display: inline-flex; align-items: center; gap: 6px; }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: oklch(0.65 0.15 150); display: inline-block; }
+  .live.off i { background: var(--ink-3); }
+  .games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .games li { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+  .chip { flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: white; font-size: 11px; font-weight: 600; }
+  .games b { display: block; font-size: 14px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .games small { display: block; color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
+  .games .skeleton { height: 56px; background: var(--surface); opacity: .6; }
+  @media (prefers-reduced-motion: reduce) { a.portal { transition: none; } }
+</style>
 </head>
 <body>
-<div id="root"></div>
-<script type="module" src="/src/main.jsx"></script>
+<main>
+  <div class="brand"><div class="mark" aria-hidden="true"></div><div><div style="font-weight:600;letter-spacing:-0.02em">Mela Scale</div><div class="eyebrow">by Kunta Content</div></div></div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <h1>In-game brand analytics, from <em>our games</em> to your dashboard</h1>
+    <p>Kunta Content's games send placement, session and conversion events to Mela Scale. The team manages games and campaigns in the admin portal; brands follow their campaigns in the client portal.</p>
+  </div>
+  <div class="portals">
+    <a class="portal" href="./admin/">
+      <span class="eyebrow">Kunta Content team</span>
+      <b>Admin portal</b>
+      <span>Manage games, placements, analytics connections, clients and campaigns.</span>
+      <span class="go">Open admin →</span>
+    </a>
+    <a class="portal" href="./client/">
+      <span class="eyebrow">Brands &amp; partners</span>
+      <b>Client portal</b>
+      <span>Reach, engagement, placements and conversions for your campaigns.</span>
+      <span class="go">Open client portal →</span>
+    </a>
+  </div>
+  <section class="catalog" aria-labelledby="catalog-title">
+    <div class="catalog-head">
+      <h2 id="catalog-title">Games on Mela Scale</h2>
+      <span class="eyebrow live off" id="catalog-status"><i aria-hidden="true"></i><span>Loading catalogue…</span></span>
+    </div>
+    <ul class="games" id="catalog-list" aria-live="polite">
+      <li class="skeleton" aria-hidden="true"></li><li class="skeleton" aria-hidden="true"></li><li class="skeleton" aria-hidden="true"></li>
+    </ul>
+  </section>
+</main>
+<script type="module" src="/src/landing.js"></script>
 </body>
 </html>

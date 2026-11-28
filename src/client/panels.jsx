@@ -1,6 +1,9 @@
 import React, { useState, useState as useS, useEffect as useE, useRef as useR } from "react";
-import { COHORTS, DATE_RANGES, KPIS, NAV, NAV_FOOTER, PLACEMENTS, REGIONS } from "./data.jsx";
-import { Sparkline } from "./charts.jsx";
+import { CAMPAIGN, COHORTS, DATE_RANGES, KPIS, NAV, NAV_FOOTER, PLACEMENTS, REGIONS } from "./data.jsx";
+import { useClient } from "./context.js";
+import { campaignStatus, labelOf, CAMPAIGN_STATUSES } from "../shared/schema.js";
+import { fmtDate, fmtNum, timeAgo, initials } from "../shared/format.js";
+import { Sparkline } from "../shared/charts.jsx";
 /* Panels — sidebar, header, KPI, AI insights, placement table, etc. */
 
 export function Sidebar({ active, setActive, darkMode, setDarkMode, navOpen }) {
@@ -53,18 +56,10 @@ export function Brand() {
   );
 }
 
-export const GAME_LIST = [
-  { id: "lima", name: "LIMA Farming Game", abbr: "LF", hue: 145 },
-  { id: "mazu", name: "MAZU Runner", abbr: "MR", hue: 210 },
-  { id: "hiru", name: "HIRU Game", abbr: "HG", hue: 30 },
-  { id: "kushaba", name: "KUSHABA Fighting Game", abbr: "KF", hue: 350 },
-  { id: "sango", name: "SANGO Platformer Game", abbr: "SP", hue: 270 },
-  { id: "imaginarium", name: "IMAGINARIUM Map Game", abbr: "IM", hue: 55 },
-];
-
+/* Campaign switcher: the signed-in client's campaigns across Kunta Content games. */
 export function Workspace() {
+  const ctx = useClient();
   const [open, setOpen] = useS(false);
-  const [selected, setSelected] = useS(GAME_LIST[0]);
   const ref = useR(null);
   useE(() => {
     if (!open) return;
@@ -72,37 +67,49 @@ export function Workspace() {
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
+  if (!ctx) return null;
+  const { campaigns, games, current, select, today } = ctx;
+  const gameOf = (c) => games.find(g => g.id === c.game_id) || { abbr: "?", hue: 80, name: "Game" };
+  const sel = gameOf(current);
   return (
     <div ref={ref} style={{ position: "relative", marginTop: 16 }}>
-      <button className="sidebar-workspace" onClick={() => setOpen(!open)} style={{
+      <button className="sidebar-workspace" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Switch campaign" style={{
         display: "flex", alignItems: "center", gap: 10, width: "100%",
         padding: "8px 10px", background: "var(--surface-2)", border: "1px solid var(--line)",
         borderRadius: 10, cursor: "pointer", textAlign: "left",
       }}>
-        <div style={{ width: 22, height: 22, borderRadius: 6, background: `oklch(0.55 0.14 ${selected.hue})`, display: "grid", placeItems: "center", fontSize: 9, fontWeight: 700, color: "white", flexShrink: 0, letterSpacing: "-0.02em" }}>{selected.abbr}</div>
-        <div className="sidebar-workspace-text" style={{ flex: 1 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600 }}>{selected.name}</div>
-          <div style={{ fontSize: 10.5, color: "var(--ink-3)" }}>Active campaign</div>
+        <div style={{ width: 22, height: 22, borderRadius: 6, background: `oklch(0.55 0.14 ${sel.hue})`, display: "grid", placeItems: "center", fontSize: 9, fontWeight: 700, color: "white", flexShrink: 0, letterSpacing: "-0.02em" }}>{sel.abbr}</div>
+        <div className="sidebar-workspace-text" style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sel.name}</div>
+          <div style={{ fontSize: 10.5, color: "var(--ink-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{current.name} · {labelOf(CAMPAIGN_STATUSES, campaignStatus(current, today))}</div>
         </div>
         <span className="sidebar-workspace-text" style={{ color: "var(--ink-3)", transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>⌄</span>
       </button>
       {open && (
         <div style={{
-          position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 50,
+          position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, minWidth: 220, zIndex: 50,
           background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10,
-          boxShadow: "var(--shadow-lg)", padding: 4, display: "flex", flexDirection: "column", gap: 1,
+          boxShadow: "var(--shadow-md)", padding: 4, display: "flex", flexDirection: "column", gap: 1,
         }}>
-          {GAME_LIST.map(g => (
-            <button key={g.id} onClick={() => { setSelected(g); setOpen(false); }} style={{
-              display: "flex", alignItems: "center", gap: 10, padding: "8px 10px",
-              border: "none", background: selected.id === g.id ? "var(--surface-2)" : "transparent",
-              borderRadius: 8, cursor: "pointer", textAlign: "left", width: "100%",
-            }}>
-              <div style={{ width: 20, height: 20, borderRadius: 5, background: `oklch(0.55 0.14 ${g.hue})`, display: "grid", placeItems: "center", fontSize: 8.5, fontWeight: 700, color: "white", flexShrink: 0, letterSpacing: "-0.02em" }}>{g.abbr}</div>
-              <span style={{ fontSize: 12.5, fontWeight: selected.id === g.id ? 600 : 400, color: "var(--ink)" }}>{g.name}</span>
-              {selected.id === g.id && <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--primary)" }}>✓</span>}
-            </button>
-          ))}
+          <div className="mono" style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", padding: "6px 10px 4px" }}>Your campaigns</div>
+          {campaigns.map(c => {
+            const g = gameOf(c);
+            const on = c.id === current.id;
+            return (
+              <button key={c.id} onClick={() => { select(c.id); setOpen(false); }} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 10px",
+                border: "none", background: on ? "var(--surface-2)" : "transparent",
+                borderRadius: 8, cursor: "pointer", textAlign: "left", width: "100%",
+              }}>
+                <div style={{ width: 20, height: 20, borderRadius: 5, background: `oklch(0.55 0.14 ${g.hue})`, display: "grid", placeItems: "center", fontSize: 8.5, fontWeight: 700, color: "white", flexShrink: 0, letterSpacing: "-0.02em" }}>{g.abbr}</div>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 12.5, fontWeight: on ? 600 : 500, color: "var(--ink)" }}>{c.name}</span>
+                  <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-3)" }}>{g.name} · {labelOf(CAMPAIGN_STATUSES, campaignStatus(c, today))}</span>
+                </span>
+                {on && <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--primary)" }}>✓</span>}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -174,20 +181,22 @@ export function NavItem({ item, active, onClick }) {
 }
 
 export function FeedStatus() {
+  const ctx = useClient();
+  const h = ctx && ctx.health;
+  const live = h && h.connected;
   return (
     <div style={{ background: "var(--surface-2)", border: "1px solid var(--line)", borderRadius: 12, padding: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
-        <span className="live-dot" />
-        <span style={{ fontWeight: 600 }}>Feeds live</span>
-        <span style={{ marginLeft: "auto", color: "var(--ink-3)" }} className="mono">5/5</span>
+        {live ? <span className="live-dot" /> : <span style={{ width: 7, height: 7, borderRadius: 4, background: "var(--ink-3)" }} />}
+        <span style={{ fontWeight: 600 }}>{live ? "Game feed live" : "Waiting for game data"}</span>
       </div>
       <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 6, lineHeight: 1.4 }}>
-        Last ingest 12s ago · 1.2M events/min
+        {h ? <>Last event {timeAgo(h.last_event_at)} · {fmtNum(h.events_today)} events today</> : "Connecting…"}
       </div>
-      <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+      <div style={{ display: "flex", gap: 4, marginTop: 8 }} aria-hidden="true">
         {Array.from({ length: 24 }).map((_, i) => (
           <div key={i} style={{
-            flex: 1, height: 18 - (i % 5) * 2 - 4, background: i > 19 ? "var(--good)" : "oklch(0.85 0.06 155)",
+            flex: 1, height: 18 - (i % 5) * 2 - 4, background: live ? (i > 19 ? "var(--good)" : "oklch(0.85 0.06 155)") : "var(--line)",
             borderRadius: 2,
           }} />
         ))}
@@ -205,11 +214,11 @@ export function Header({ rangeIdx, setRangeIdx, compare, setCompare, onMenu }) {
       <div className="title-block">
 
         <h1 style={{ margin: "2px 0 0", fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em" }}>
-          <span className="serif" style={{ fontStyle: "italic", fontWeight: 600, color: "var(--ink)", fontFamily: "Lato", textAlign: "center", letterSpacing: "0px" }}>Hello Tractor</span>
+          <span className="serif" style={{ fontStyle: "italic", fontWeight: 600, color: "var(--ink)", fontFamily: "Lato", textAlign: "center", letterSpacing: "0px" }}>{CAMPAIGN.brand}</span>
           <span style={{ color: "var(--ink-3)", margin: "0 8px", fontWeight: 400 }}>×</span>
-          Lima Farming Game
+          {CAMPAIGN.game}
         </h1>
-
+        <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>{CAMPAIGN.name} · {fmtDate(CAMPAIGN.startedAt)} – {fmtDate(CAMPAIGN.endsAt)} · reporting {fmtDate(CAMPAIGN.windowFrom)} – {fmtDate(CAMPAIGN.windowTo)}</div>
       </div>
       <div className="header-spacer" />
       <SearchInput />
@@ -219,6 +228,9 @@ export function Header({ rangeIdx, setRangeIdx, compare, setCompare, onMenu }) {
 }
 
 export function ProfileDropdown({ onClose }) {
+  const ctx = useClient();
+  const name = ctx ? ctx.session.name : "";
+  const email = ctx ? ctx.session.email : "";
   return (
     <div onClick={e => e.stopPropagation()} style={{
       position: "absolute", top: "calc(100% + 10px)", right: 0,
@@ -228,20 +240,16 @@ export function ProfileDropdown({ onClose }) {
     }}>
       {/* Profile header */}
       <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--line-2)", display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ ...avatarStyle, width: 40, height: 40, fontSize: 15, flexShrink: 0 }}>KO</div>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>Kwame Owusu</div>
-          <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>kwame@acmeinc.com</div>
+        <div style={{ ...avatarStyle, width: 40, height: 40, fontSize: 15, flexShrink: 0 }}>{initials(name)}</div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>{name}</div>
+          <div style={{ fontSize: 11.5, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis" }}>{email}</div>
         </div>
       </div>
       {/* Menu items */}
       <div style={{ padding: 6 }}>
         {[
-          { icon: "◻", label: "View profile" },
-          { icon: "⚙", label: "Account settings" },
-          { icon: "▦", label: "Billing & plan" },
-          { icon: "◇", label: "Team members", count: 6 },
-          { icon: "↯", label: "API keys" },
+          { icon: "◇", label: `${ctx ? ctx.campaigns.length : 0} campaign${ctx && ctx.campaigns.length === 1 ? "" : "s"} with Kunta Content` },
         ].map(item => (
           <button key={item.label} onClick={onClose} style={{
             display: "flex", alignItems: "center", gap: 10, width: "100%",
@@ -255,7 +263,7 @@ export function ProfileDropdown({ onClose }) {
         ))}
       </div>
       <div style={{ borderTop: "1px solid var(--line-2)", padding: 6 }}>
-        <button onClick={onClose} style={{
+        <button onClick={() => { onClose(); ctx && ctx.signOut(); }} style={{
           display: "flex", alignItems: "center", gap: 10, width: "100%",
           padding: "8px 10px", background: "transparent", border: "none",
           borderRadius: 8, fontSize: 13.5, color: "var(--bad)", textAlign: "left", cursor: "pointer",
@@ -430,19 +438,22 @@ export function KpiStrip({ compare }) {
 }
 
 export function KpiCard({ k, compare }) {
-  const positive = (k.deltaInverted ? k.delta < 0 : k.delta > 0);
+  const hasDelta = k.delta != null && Number.isFinite(k.delta);
+  const positive = !hasDelta || (k.deltaInverted ? k.delta < 0 : k.delta >= 0);
   const deltaColor = positive ? "var(--good)" : "var(--bad)";
   const deltaBg = positive ? "var(--good-soft)" : "oklch(0.95 0.04 25)";
   return (
     <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: 12.5, color: "var(--ink-2)", fontWeight: 500 }}>{k.label}</div>
+        {hasDelta ? (
         <span style={{
           fontSize: 11, color: deltaColor, background: deltaBg, padding: "2px 7px",
           borderRadius: 999, fontWeight: 600,
         }} className="mono tnum">
           {positive ? "↑" : "↓"} {Math.abs(k.delta).toFixed(1)}%
         </span>
+        ) : <span style={{ fontSize: 11, color: "var(--ink-3)" }} className="mono">new</span>}
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
         <div style={{ fontSize: 36, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1 }} className="tnum">
@@ -457,7 +468,7 @@ export function KpiCard({ k, compare }) {
       </div>
       <div style={{ fontSize: 11.5, color: "var(--ink-3)", display: "flex", justifyContent: "space-between" }}>
         <span>{k.sub}</span>
-        {compare && <span className="mono tnum">vs prev</span>}
+        {compare && hasDelta && <span className="mono tnum">vs prev</span>}
       </div>
     </div>
   );
