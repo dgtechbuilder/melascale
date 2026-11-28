@@ -1,5 +1,19 @@
 # Backend setup (Supabase)
 
+Mela Scale runs on the **MelaPress** Supabase project (`nxjwjklugmwnrlngzrub`), next to its game
+catalogue. The catalogue table `public.games` is shared: MelaPress's website and Mela Scale both read it.
+
+## Live game catalogue (works today, no setup)
+
+The portal chooser and the admin portal's game list read `public.games` live with MelaPress's
+publishable key (`src/shared/catalog.js`). The table's "Game catalog is publicly readable" policy is
+what allows it; nothing is written. In demo mode the catalogue is merged into the browser workspace:
+HIRU and Imaginarium keep their demo placements and traffic, and the other catalogue games appear with
+no traffic until they send events. To point at another project, set `VITE_CATALOG_SUPABASE_URL` and
+`VITE_CATALOG_SUPABASE_KEY`.
+
+## Full backend (placements, campaigns, events, client sign-in)
+
 Without these settings both portals run in **demo mode**: everything lives in the browser's
 local storage, and the 30-day history for live games is generated sample traffic. That is what the
 GitHub Pages site shows. To collect real analytics from game builds and give clients their own
@@ -9,9 +23,9 @@ sign-in, connect a Supabase project.
 
 | Piece | Where | What it does |
 |---|---|---|
-| `supabase/migrations/0001_mela_scale.sql` | Postgres | Tables, row-level security, and the functions the portals call (`rollup_daily`, `unique_reach`, `ingest_health`, `create_api_key`) |
+| `supabase/migrations/0001_mela_scale.sql` | Postgres | New tables (`mela_games`, `staff`, `placements`, `clients`, `client_users`, `campaigns`, `api_keys`, `events`), row-level security, and the functions the portals call. It reuses MelaPress's `public.games` and never creates, alters or drops it; it only adds two policies so Mela Scale staff can add and edit catalogue games |
 | `supabase/functions/ingest` | Edge function | Games POST events here with an API key. Validates, then writes to `events` with the service role |
-| `supabase/seed.sql` | Postgres | Kunta Content's six games and the LIMA, MAZU, SANGO and HIRU placements. Optional |
+| `supabase/seed.sql` | Postgres | Mela Scale settings for every catalogue game and the HIRU placements. Never inserts into the catalogue. Optional |
 | `admin/`, `client/` | Static site | The two portals. They read through Supabase with the signed-in user's session |
 
 ## Who can see what
@@ -28,7 +42,7 @@ when asking for a rival's placement reach, and can't create keys or campaigns; a
 
 ## Setup
 
-1. Create a Supabase project.
+1. Use the MelaPress project (ref `nxjwjklugmwnrlngzrub`).
 2. Run the migration, then (optionally) the seed:
    ```bash
    supabase link --project-ref <ref>
@@ -53,6 +67,11 @@ when asking for a rival's placement reach, and can't create keys or campaigns; a
    - GitHub Pages: add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as repository **variables**
      (Settings → Secrets and variables → Actions → Variables). The deploy workflow passes them to the build.
      The anon key is public by design; row-level security is what protects the data.
+
+Note on shared data: adding a game in the admin portal inserts it into `public.games`, so it also
+appears in the MelaPress catalogue. Editing a game writes its title and description back to the
+catalogue; genre, platforms and status stay in `mela_games`. A catalogue game with campaigns can't be
+deleted until its campaigns are (`on delete restrict`).
 
 ## Day-to-day flow
 

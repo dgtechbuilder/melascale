@@ -1,4 +1,8 @@
--- Mela Scale: games, placements, clients, campaigns, API keys and analytics events.
+-- Mela Scale: placements, clients, campaigns, API keys and analytics events, added to the
+-- MelaPress Supabase project next to its game catalogue (public.games).
+-- Additive only: new tables and functions, plus two policies on public.games that let
+-- Mela Scale staff add and edit catalogue games. Existing MelaPress tables, columns and
+-- policies are left as they are (the catalogue stays publicly readable).
 --
 -- Who sees what (row-level security):
 --   * Kunta Content staff (rows in public.staff, matched on the signed-in email) see and manage everything.
@@ -19,19 +23,19 @@ create table public.staff (
   created_at timestamptz not null default now()
 );
 
-create table public.games (
-  id uuid primary key default gen_random_uuid(),
-  slug text not null unique,
-  name text not null,
+-- Games live in the existing MelaPress catalogue table, public.games (id uuid, slug, title,
+-- category, platforms text, release_status, ...). This migration never creates, alters or drops it.
+-- Mela Scale's own per-game settings sit beside it, one row per catalogue game.
+create table public.mela_games (
+  game_id uuid primary key references public.games (id) on delete cascade,
   abbr text,
-  hue int not null default 145,
+  hue int,
   studio text not null default 'Kunta Content',
   genre text,
   platforms text[] not null default '{}',
   status text not null default 'development' check (status in ('live', 'beta', 'development', 'paused')),
   mau bigint not null default 0,
-  description text,
-  created_at timestamptz not null default now()
+  updated_at timestamptz not null default now()
 );
 
 create table public.placements (
@@ -146,7 +150,7 @@ $$;
 -- ── row-level security ───────────────────────────────────────────────────
 
 alter table public.staff enable row level security;
-alter table public.games enable row level security;
+alter table public.mela_games enable row level security;
 alter table public.placements enable row level security;
 alter table public.clients enable row level security;
 alter table public.client_users enable row level security;
@@ -159,9 +163,16 @@ create policy staff_read on public.staff for select to authenticated
 create policy staff_write on public.staff for all to authenticated
   using (public.is_staff()) with check (public.is_staff());
 
-create policy games_read on public.games for select to authenticated
-  using (public.is_staff() or public.client_can_see_game(id));
-create policy games_write on public.games for all to authenticated
+-- public.games already has "Game catalog is publicly readable" and admin-only writes for MelaPress
+-- admins. These add write access for Mela Scale staff; nothing is removed.
+create policy mela_staff_insert_games on public.games for insert to authenticated
+  with check (public.is_staff());
+create policy mela_staff_update_games on public.games for update to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+
+create policy mela_games_read on public.mela_games for select to authenticated
+  using (public.is_staff() or public.client_can_see_game(game_id));
+create policy mela_games_write on public.mela_games for all to authenticated
   using (public.is_staff()) with check (public.is_staff());
 
 create policy placements_read on public.placements for select to authenticated

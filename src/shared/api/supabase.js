@@ -1,6 +1,8 @@
 /* Supabase backend. Same interface as demo.js; row-level security in
    supabase/migrations decides what staff and client users can see. */
 import { createClient } from "@supabase/supabase-js";
+import { toMelaGame } from "../catalog.js";
+import { PLATFORMS, labelOf } from "../schema.js";
 
 export function createSupabaseApi(url, anonKey) {
   const sb = createClient(url, anonKey, { auth: { persistSession: true, detectSessionInUrl: true } });
@@ -37,12 +39,26 @@ export function createSupabaseApi(url, anonKey) {
     async signInAsClient() { throw new Error("Use email sign-in"); },
     async signOut() { await sb.auth.signOut(); notify(); },
 
-    async listGames() { return ok(await sb.from("games").select("*").order("created_at")); },
+    /* Games are the MelaPress catalogue (public.games) plus Mela Scale's settings (public.mela_games). */
+    async listGames() {
+      const rows = ok(await sb.from("games").select("*, mela_games(*)").order("created_at"));
+      return rows.map(r => toMelaGame(r, Array.isArray(r.mela_games) ? r.mela_games[0] : r.mela_games));
+    },
     async saveGame(g) {
-      const { id, ...rest } = g;
-      const row = id ? ok(await sb.from("games").update(rest).eq("id", id).select().single())
-                     : ok(await sb.from("games").insert(rest).select().single());
-      notify(); return row;
+      // Existing catalogue games: only the title and description are written back to MelaPress.
+      // Genre, platforms and status live in mela_games, so the catalogue's own wording is kept.
+      const game = g.id
+        ? ok(await sb.from("games").update({ title: g.name, description: g.description || null }).eq("id", g.id).select().single())
+        : ok(await sb.from("games").insert({
+            slug: g.slug, title: g.name, description: g.description || null, category: g.genre || null,
+            platforms: (g.platforms || []).map(p => labelOf(PLATFORMS, p)).join(", ") || null, release_status: "In development",
+          }).select().single());
+      const extra = ok(await sb.from("mela_games").upsert({
+        game_id: game.id, abbr: g.abbr || null, hue: g.hue ?? null, studio: g.studio || "Kunta Content", genre: g.genre || null,
+        platforms: g.platforms || [], status: g.status || "development", mau: Number(g.mau) || 0, updated_at: new Date().toISOString(),
+      }).select().single());
+      notify();
+      return toMelaGame(game, extra);
     },
 
     async listPlacements(gameId) {

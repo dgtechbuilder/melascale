@@ -28,7 +28,10 @@ the 30-day history of live games is generated sample traffic, and the admin port
 The GitHub Pages site runs this way. Changes made in the admin portal show up in the client
 portal in the same browser.
 
-To go live, connect Supabase: see [docs/BACKEND.md](docs/BACKEND.md). Game teams integrate with
+The game list is live in every mode: the portal chooser and the admin portal read Kunta Content's
+games from the **MelaPress** Supabase catalogue (`public.games`, read-only).
+
+To run the full backend on the MelaPress project: see [docs/BACKEND.md](docs/BACKEND.md). Game teams integrate with
 [docs/INTEGRATION.md](docs/INTEGRATION.md).
 
 ## Run it

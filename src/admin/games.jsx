@@ -1,6 +1,7 @@
 /* Games: the portfolio list, each game's analytics, placements and SDK connection. */
 import React, { useMemo, useState } from "react";
-import { api } from "../shared/api/index.js";
+import { api, catalog } from "../shared/api/index.js";
+import { CATALOG_SOURCE } from "../shared/catalog.js";
 import { addDays, fmtDate, fmtMoney, fmtNum, isoDay, slugify, timeAgo } from "../shared/format.js";
 import { EVENT_TYPES, GAME_STATUSES, PLACEMENT_KINDS, PLATFORMS, REGIONS, labelOf, campaignStatus } from "../shared/schema.js";
 import { buildGameSummary, placementTotals } from "../shared/metrics.js";
@@ -26,6 +27,7 @@ export function GamesPage() {
     <Page title="Games" sub="Kunta Content's portfolio. Each game sends its analytics to Mela Scale with its own API key."
       actions={<Button onClick={() => setAdding(true)}>+ Add game</Button>}>
       {error && <ErrorText error={error} />}
+      {data && <CatalogNote games={data.games} />}
       {data && (
         <div className="adm-grid adm-grid-3">
           {data.games.map(g => {
@@ -36,7 +38,8 @@ export function GamesPage() {
                   <GameChip game={g} size={34} />
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 14.5 }}>{g.name}</div>
-                    <div className="adm-muted adm-small">{g.genre} · {g.platforms.map(p => labelOf(PLATFORMS, p)).join(", ")}</div>
+                    <div className="adm-muted adm-small">{[g.genre, (g.platforms || []).map(p => labelOf(PLATFORMS, p)).join(", ")].filter(Boolean).join(" · ")}</div>
+                    {g.catalog_id && <div className="adm-muted adm-small" title={`Listed in the ${CATALOG_SOURCE} game catalogue`}>● {CATALOG_SOURCE}{g.release_status ? ` · ${g.release_status}` : ""}</div>}
                   </div>
                   <GameStatus status={g.status} />
                 </div>
@@ -54,6 +57,14 @@ export function GamesPage() {
       {adding && <GameModal onClose={() => setAdding(false)} onSaved={g => { setAdding(false); go(`games/${g.id}/connect`); }} />}
     </Page>
   );
+}
+
+/* Where the game list comes from: the live MelaPress catalogue. */
+function CatalogNote({ games }) {
+  const n = games.filter(g => g.catalog_id).length;
+  if (catalog.state === "error" && !n) return <Notice tone="warn">Couldn't reach the {CATALOG_SOURCE} game catalogue ({catalog.error}). Showing the games saved here.</Notice>;
+  if (!n) return null;
+  return <Notice tone="good">{n} {n === 1 ? "game comes" : "games come"} live from the {CATALOG_SOURCE} catalogue. Titles, descriptions and release status update there.</Notice>;
 }
 
 /* ── add / edit ── */

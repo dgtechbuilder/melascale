@@ -4,6 +4,7 @@ import { buildSeed } from "../seed.js";
 import { addDays, isoDay, hashString } from "../format.js";
 import { validateBatch } from "../ingest.js";
 import { applyEventToRollups, rollupMapToRows, syntheticRows } from "../rollups.js";
+import { gameKey } from "../catalog.js";
 
 const STORAGE_KEY = "mela-scale.demo.v1";
 const SESSION_KEY = "mela-scale.demo.session"; // + ".staff" / ".client": each portal keeps its own demo login
@@ -266,6 +267,29 @@ export const demoApi = {
     });
   },
 
+  /* ── live catalogue ──
+     Games from the MelaPress catalogue join the demo workspace. A demo game with the
+     same first word (HIRU, IMAGINARIUM) takes the catalogue's name and description and
+     keeps its placements and traffic; the rest are added with no traffic yet. */
+  syncCatalog(catalog) {
+    const s = load();
+    let changed = false;
+    for (const c of catalog) {
+      const match = s.games.find(g => g.catalog_id === c.catalog_id)
+        || s.games.find(g => !g.catalog_id && (g.slug === c.slug || gameKey(g.name) === gameKey(c.name)));
+      if (match) {
+        const next = { ...match, catalog_id: c.catalog_id, catalog_source: c.catalog_source, name: c.name, subtitle: c.subtitle,
+          description: c.description || match.description, release_status: c.release_status };
+        if (JSON.stringify(next) !== JSON.stringify(match)) { Object.assign(match, next); changed = true; }
+      } else {
+        s.games.push({ ...c, seeded: false });
+        changed = true;
+      }
+    }
+    if (changed) { synthCache.clear(); save(); }
+    return changed;
+  },
+
   /* ── demo-only helpers ── */
   async reset() {
     state = buildSeed(isoDay());
@@ -278,7 +302,8 @@ export const demoApi = {
     if (!live.length) return;
     const game = live[Math.floor(Math.random() * live.length)];
     const pls = s.placements.filter(p => p.game_id === game.id);
-    const platform = game.platforms[Math.floor(Math.random() * game.platforms.length)];
+    const plats = game.platforms && game.platforms.length ? game.platforms : ["webgl"];
+    const platform = plats[Math.floor(Math.random() * plats.length)];
     const region = ["na", "emea", "apac", "latam"][Math.floor(Math.random() * 4)];
     const sid = "sim-" + Math.random().toString(36).slice(2, 8);
     const pid = "player-" + Math.floor(Math.random() * 5000);

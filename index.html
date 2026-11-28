@@ -39,6 +39,18 @@
   .portal b { font-size: 18px; letter-spacing: -0.01em; }
   .portal span { color: var(--ink-2); font-size: 14px; }
   .go { margin-top: 6px; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--primary); }
+  .catalog { display: flex; flex-direction: column; gap: 12px; }
+  .catalog-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .catalog-head h2 { margin: 0; font-size: 17px; letter-spacing: -0.01em; font-weight: 600; }
+  .live { display: inline-flex; align-items: center; gap: 6px; }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: oklch(0.65 0.15 150); display: inline-block; }
+  .live.off i { background: var(--ink-3); }
+  .games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .games li { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+  .chip { flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: white; font-size: 11px; font-weight: 600; }
+  .games b { display: block; font-size: 14px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .games small { display: block; color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
+  .games .skeleton { height: 56px; background: var(--surface); opacity: .6; }
   @media (prefers-reduced-motion: reduce) { a.portal { transition: none; } }
 </style>
 </head>
@@ -63,6 +75,16 @@
       <span class="go">Open client portal →</span>
     </a>
   </div>
+  <section class="catalog" aria-labelledby="catalog-title">
+    <div class="catalog-head">
+      <h2 id="catalog-title">Games on Mela Scale</h2>
+      <span class="eyebrow live off" id="catalog-status"><i aria-hidden="true"></i><span>Loading catalogue…</span></span>
+    </div>
+    <ul class="games" id="catalog-list" aria-live="polite">
+      <li class="skeleton" aria-hidden="true"></li><li class="skeleton" aria-hidden="true"></li><li class="skeleton" aria-hidden="true"></li>
+    </ul>
+  </section>
 </main>
+<script type="module" src="/src/landing.js"></script>
 </body>
 </html>
