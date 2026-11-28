@@ -51,6 +51,34 @@
   .games b { display: block; font-size: 14px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
   .games small { display: block; color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
   .games .skeleton { height: 56px; background: var(--surface); opacity: .6; }
+  .player { display: flex; flex-direction: column; gap: 12px; }
+  .card { padding: 18px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .signin { display: flex; gap: 8px; flex-wrap: wrap; }
+  .signin input { flex: 1 1 260px; min-width: 0; font: 13px "JetBrains Mono", monospace; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .signin input:focus-visible, .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .btn { font: 600 14px "Instrument Sans", system-ui, sans-serif; border-radius: 10px; padding: 10px 16px; cursor: pointer; border: 1px solid var(--primary); background: var(--primary); color: white; }
+  .btn.ghost { background: transparent; color: var(--ink-2); border-color: var(--line); padding: 6px 12px; font-size: 13px; font-weight: 500; }
+  .btn.ghost:hover { border-color: var(--primary); color: var(--primary); }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .hint { font-size: 13px; color: var(--ink-3); }
+  .hint.error { color: oklch(0.55 0.18 25); }
+  .who { display: flex; align-items: center; gap: 12px; }
+  .who .chip { width: 40px; height: 40px; border-radius: 10px; font-size: 14px; background: oklch(0.55 0.14 145); }
+  .who b { display: block; font-size: 17px; letter-spacing: -0.01em; }
+  .who small { color: var(--ink-3); font-size: 12.5px; }
+  .who .btn { margin-left: auto; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 0; }
+  .stats div { padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); min-width: 0; }
+  .stats dt { font-family: "JetBrains Mono", monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+  .stats dd { margin: 2px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stats dd small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-3); letter-spacing: 0; }
+  .card h3 { margin: 0; font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+  .card h3 span { font-weight: 400; color: var(--ink-3); }
+  .badges { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .badges li { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); min-width: 0; }
+  .medal { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: white; background: var(--medal, oklch(0.6 0.13 145)); }
+  .badges b { display: block; font-size: 13.5px; overflow-wrap: anywhere; }
+  .badges small { display: block; font-size: 12px; color: var(--ink-3); }
   @media (prefers-reduced-motion: reduce) { a.portal { transition: none; } }
 </style>
 </head>
@@ -83,6 +111,22 @@
     <ul class="games" id="catalog-list" aria-live="polite">
       <li class="skeleton" aria-hidden="true"></li><li class="skeleton" aria-hidden="true"></li><li class="skeleton" aria-hidden="true"></li>
     </ul>
+  </section>
+  <section class="player" aria-labelledby="player-title">
+    <div class="catalog-head">
+      <h2 id="player-title">Your TemoLima progress</h2>
+      <span class="eyebrow live off" id="player-status"><i aria-hidden="true"></i><span>Not signed in</span></span>
+    </div>
+    <div id="player-panel" aria-live="polite">
+      <form class="card" id="player-signin">
+        <label for="player-code" style="font-weight:600;font-size:14px">Player code</label>
+        <div class="signin">
+          <input id="player-code" name="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required />
+          <button class="btn" type="submit">Show my progress</button>
+        </div>
+        <span class="hint" id="player-hint">Find it in TemoLima under Settings. It stays on this device, and this page only reads your farm.</span>
+      </form>
+    </div>
   </section>
 </main>
 <script type="module" src="/src/landing.js"></script>

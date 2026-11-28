@@ -31,6 +31,14 @@ portal in the same browser.
 The game list is live in every mode: the portal chooser and the admin portal read Kunta Content's
 games from the **MelaPress** Supabase catalogue (`public.games`, read-only).
 
+The portal chooser also has a **TemoLima progress** section. A player signs in with their
+player code (TemoLima → Settings) and sees their level, points, coins, streak, play time and
+achievements, read-only, through `public.temolima_progress(player code)` on MelaPress
+([SQL](supabase/melapress/20261128_temolima_progress.sql)). The TemoLima tables keep RLS on with
+no policies, so that function is the only way the page reads them; if it isn't there, the page
+falls back to the game's own save lookup, `temolima_restore`. The code is kept on the device
+until the player signs out. Screenshot: [docs/screenshots/player-progress-light.png](docs/screenshots/player-progress-light.png).
+
 To run the full backend on the MelaPress project: see [docs/BACKEND.md](docs/BACKEND.md). Game teams integrate with
 [docs/INTEGRATION.md](docs/INTEGRATION.md).
 
@@ -50,11 +58,12 @@ Then open http://localhost:5173/admin/ or http://localhost:5173/client/.
 
 | Path | Contents |
 |---|---|
-| `index.html` | Landing page linking the two portals |
+| `index.html` | Landing page linking the two portals, with the game catalogue and TemoLima player progress |
 | `src/shared/` | Design tokens and styles, charts, data layer (`api/demo.js`, `api/supabase.js`), event validation, rollups and campaign metrics |
 | `src/admin/` | Admin portal: overview, games (analytics, placements, connect), campaigns, clients, event stream, settings |
 | `src/client/` | Client portal: sign-in and campaign switcher (`session.jsx`) around the original dashboard |
-| `supabase/` | Database migration with row-level security, seed data, `ingest` edge function |
+| `supabase/` | Database migration with row-level security, seed data, `ingest` edge function; `melapress/` records SQL applied to the MelaPress project |
+| `tests/` | Unit tests (`npm test`, Node's built-in runner) |
 | `sdk/` | `mela-sdk.js` for WebGL/HTML5 games, `unity/MelaScale.cs` for Unity |
 | `docs/` | Backend setup, game integration guide, design system notes |
 
