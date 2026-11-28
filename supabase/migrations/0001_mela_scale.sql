@@ -299,3 +299,15 @@ grant execute on function public.create_api_key(uuid, text) to authenticated;
 grant execute on function public.rollup_daily(uuid, date, date) to authenticated;
 grant execute on function public.unique_reach(uuid, uuid[], date, date) to authenticated;
 grant execute on function public.ingest_health() to authenticated;
+
+-- Access helpers are only for signed-in users (policies are all `to authenticated`).
+revoke all on function public.current_email() from public, anon;
+revoke all on function public.is_staff() from public, anon;
+revoke all on function public.my_client_ids() from public, anon;
+revoke all on function public.my_placement_ids() from public, anon;
+revoke all on function public.client_can_see_game(uuid) from public, anon;
+grant execute on function public.current_email() to authenticated;
+grant execute on function public.is_staff() to authenticated;
+grant execute on function public.my_client_ids() to authenticated;
+grant execute on function public.my_placement_ids() to authenticated;
+grant execute on function public.client_can_see_game(uuid) to authenticated;

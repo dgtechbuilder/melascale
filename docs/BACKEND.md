@@ -42,6 +42,9 @@ when asking for a rival's placement reach, and can't create keys or campaigns; a
 
 ## Setup
 
+**Status (2026-11-28): the migration and seed are applied to MelaPress.** Steps 1–2 are done;
+start at step 3.
+
 1. Use the MelaPress project (ref `nxjwjklugmwnrlngzrub`).
 2. Run the migration, then (optionally) the seed:
    ```bash
